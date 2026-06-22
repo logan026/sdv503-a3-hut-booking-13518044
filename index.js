@@ -117,22 +117,35 @@ async function addBooking(){
             console.log(`${RED}Error: Please enter a whole number greater than zero.${RESET}`);
         } else break;
     }
-    //Check Capacity
-    if (isCapacityAvailable(hutId, date, nights, partySize)) {
-        const newBooking = {
-            id: Date.now().toString(), //Generates a unique ID
-            hutId,
-            name,
-            arrivalDate: date,
-            nights,
-            partySize
-        };
-        bookings.push(newBooking);
-        await saveData();
-        console.log('Booking succesfully added!');
+    //Confirmation Prompt
+    console.clear();
+    console.log(`\n${CYAN}----- Confirm Booking -----${RESET}`);
+    const selectedHut = huts.find(h => h.id === hutId);
+    console.log(`Hut: ${selectedHut.name}`);
+    console.log(`Tramper: ${name}`);
+    console.log(`Arrival: ${date} for ${nights} nights`);
+    console.log(`Party Size: ${partySize} people`);
+    const confirm = await askQuestion('\nSave this booking? (y/n): ');
+    if (confirm.toLowerCase().trim() === 'y') {
+        //Run capacity check before saving
+        if (isCapacityAvailable(hutId, date, nights, partySize)) {
+            const newBooking = {
+                id: Date.now().toString(), //Generates unique ID
+                hutId,
+                name: name.trim(),
+                nights,
+                partySize
+            };
+            bookings.push(newBooking);
+            await saveData();
+            console.log(`${GREEN}Booking successfully added!${RESET}`);
+        } else {
+            console.log(`${RED}Error: Hut does not have enough capacity for these dates.${RESET}`);
+        }
     } else {
-        console.log('Error: Hut does not have enough capacity for these dates.');
+        console.log(`${YELLOW}Booking Cancelled.${RESET}`);
     }
+    await pause();
 }
 async function viewBookings() {
     console.log('\n----- View Bookings -----');

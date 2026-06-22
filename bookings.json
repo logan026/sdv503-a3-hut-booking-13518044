@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "id": "1782112681164",
+    "hutId": "2",
+    "name": "Logan",
+    "arrivalDate": "2026-07-13",
+    "nights": "3",
+    "partySize": "5"
+  }
+]

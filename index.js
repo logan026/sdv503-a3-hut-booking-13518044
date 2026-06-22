@@ -36,10 +36,68 @@ async function saveData(){
     //JSON.stringify converts our array into text. the 'null, 2' formats it nicely with indents so its readable
     await fs.writeFile(DATA_FILE, JSON.stringify(bookings, null, 2));
 }
+function isCapacityAvailable(hutId, arrivalDate, nights, partySize) {
+    //Calculate all dates for the requested stay
+    const requestedDates = [];
+    const start = new Date(arrivalDate);
+    for (let i = 0; i < nights; i++) {
+        const d = new Date(start);
+            d.setDate(start.getDate() + i);
+            requestedDates.push(d.toISOString().split('T')[0]); //Format YYYY-MM-DD
+    }
+    //Check each night against existing bookings
+    for (const date of requestedDates) {
+        let currentOccupancy = 0;
+        //Sum up all parties currently booked for this specific hut on this date
+        for (const b of bookings) {
+            if (b.hutId === hutId) {
+                //Check if existing booking overlaps with this specific date
+                const bStart = new Date(b.arrivalDate);
+                const bEnd = new Date(b.arrivalDate);
+                bEnd.setDate(bStart.getDate() + parseInt(b.nights) - 1);
+                const checkDate = new Date(date);
+                if (checkDate >= bStart && checkDate <= bEnd) {
+                    cuurentOccupancy += parseInt(b.partysSize);
+                }
+            }
+        }
+        //Find the hut capacity
+        const hut = huts.find(h => h.id === hutId);
+        if (currentOccupancy + parseInt(partySize) > hut.capacity) {
+            return false; //Found a night where hut is full
+        }
+    }
+    return true; //All nights are safe
+}
 //Core APP functions (Placeholder functions for now)
 async function addBooking(){
     console.log('\n----- Add Booking -----');
-    console.log('(Booking logic coming next)');
+    const hutId = await askQuestion('Enter Hut ID (1-4): ');
+    const name = await askQuestion('Enter Tramper Name: ');
+    const date = await askQuestion('Enter Arrival Date (YYYY-MM-DD): ');
+    const nights = await askQuestion('Enter Number of Nights: ');
+    const partySize = await askQuestion('Enter Party Size: ');
+    //Basic Validation
+    if (parseInt(partySize) <= 0) {
+        console.log('Error: Party size must be at least 1.');
+        return;
+    }
+    //Check Capacity
+    if (isCapacityAvailable(hutId, date, nights, partySize)) {
+        const newBooking = {
+            id: Date.now().toString(), //Generates a unique ID
+            hutId,
+            name,
+            arrivalDate: date,
+            nights,
+            partySize
+        };
+        bookings.push(newBooking);
+        await saveData();
+        console.log('Booking succesfully added!');
+    } else {
+        console.log('Error: Hut does not have enough capacity for these dates.');
+    }
 }
 async function viewBookings() {
     console.log('\n----- View Bookings -----');

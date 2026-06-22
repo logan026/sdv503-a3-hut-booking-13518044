@@ -2,6 +2,12 @@
 import fs from 'fs/promises';   //'fs' is File System. Using /promises lets us use async/await so the app doesnt freeze while reading files
 import readline from 'readline'; //This lets us read what the user types into the terminal
 const DATA_FILE = './bookings.json'; //Where we will save our data permanently
+//Styling (ANSI Colour Codes)
+const GREEN = '\x1b[32m';
+const RED = '\x1b[31m';
+const CYAN = '\x1b[36m';
+const YELLOW = '\x1b[33m';
+const RESET = '\x1b[0m';
 //Maintain a set of huts
 const huts = [
     {id: '1', name: 'Perry Saddle Hut', capacity: 40 },
@@ -18,16 +24,20 @@ const rl = readline.createInterface({
 });
 //Helper function to make asking questions easier
 const askQuestion = (query) => new Promise(resolve => rl.question(query, resolve));
+//Helper function to pause the program
+async function pause() {
+    await askQuestion(`\n${YELLOW}Press Enter to return to the Main Menu...${RESET}`);
+}
 //Load data (handles missing/corrupt files without crashing)
 async function loadData() {
     try {
         //Try to read the file 'utf-8' turns the computer bytes into readable text
         const data = await fs.readFile(DATA_FILE, 'utf-8');
         bookings = JSON.parse(data); //Converts the JSON text back into a usable JavaScript array
-        console.log('Data loaded successfully.');
+        console.log(`${GREEN}Data loaded successfully.${RESET}`);
     } catch (error) {
         //If the file doesnt exist yet, or the JSON is broken, we catch the error here so the app dosent crash
-        console.log('No existing data found or file corrupt. Starting fresh.');
+        console.log(`${YELLOW}No existing data found or file corrupt. Starting fresh.${RESET}`);
         bookings = []; //Start clean with empty arrayy
     }
 }
@@ -36,10 +46,12 @@ async function saveData(){
     //JSON.stringify converts our array into text. the 'null, 2' formats it nicely with indents so its readable
     await fs.writeFile(DATA_FILE, JSON.stringify(bookings, null, 2));
 }
+//Capacity Logic
 function isCapacityAvailable(hutId, arrivalDate, nights, partySize) {
     //Calculate all dates for the requested stay
     const requestedDates = [];
     const start = new Date(arrivalDate);
+    //Calculate all dates for the requested stay
     for (let i = 0; i < nights; i++) {
         const d = new Date(start);
             d.setDate(start.getDate() + i);
@@ -57,7 +69,7 @@ function isCapacityAvailable(hutId, arrivalDate, nights, partySize) {
                 bEnd.setDate(bStart.getDate() + parseInt(b.nights) - 1);
                 const checkDate = new Date(date);
                 if (checkDate >= bStart && checkDate <= bEnd) {
-                    cuurentOccupancy += parseInt(b.partysSize);
+                    currentOccupancy += parseInt(b.partySize);
                 }
             }
         }

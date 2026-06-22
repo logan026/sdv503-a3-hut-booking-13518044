@@ -1,0 +1,21 @@
+{
+  "name": "sdv503-a3-hut-booking-13518044",
+  "version": "1.0.0",
+  "description": "Simple hut booking application",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/logan026/sdv503-a3-hut-booking-13518044.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/logan026/sdv503-a3-hut-booking-13518044/issues"
+  },
+  "homepage": "https://github.com/logan026/sdv503-a3-hut-booking-13518044#readme"
+}

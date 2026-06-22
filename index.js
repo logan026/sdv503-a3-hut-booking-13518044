@@ -1,4 +1,4 @@
-//Imports: Bring in the tools we need from Node.ja
+//Imports: Bring in the tools we need from Node.js
 import fs from 'fs/promises';   //'fs' is File System. Using /promises lets us use async/await so the app doesnt freeze while reading files
 import readline from 'readline'; //This lets us read what the user types into the terminal
 const DATA_FILE = './bookings.json'; //Where we will save our data permanently
@@ -133,6 +133,7 @@ async function addBooking(){
                 id: Date.now().toString(), //Generates unique ID
                 hutId,
                 name: name.trim(),
+                arrivalDate: date,
                 nights,
                 partySize
             };
@@ -149,6 +150,7 @@ async function addBooking(){
 }
 //View bookings menu
 async function viewBookings() {
+    console.clear();
     console.log(`\n${CYAN}----- Recorded Bookings -----${RESET}`);
     //Check if the array is empty to avoid errors
     if (bookings.length === 0) {
@@ -204,7 +206,7 @@ async function main() {
     while (running) {
         console.clear();
         //Print the menu to the screen
-        console.log('\n${CYAN}----- DOC Hut Booking Manager -----${RESET}');
+        console.log(`\n${CYAN}----- DOC Hut Booking Manager -----${RESET}`);
         console.log('1. Add a Booking');
         console.log('2. View Bookings');
         console.log('3. Cancel a Booking');

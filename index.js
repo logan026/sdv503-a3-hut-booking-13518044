@@ -101,7 +101,18 @@ async function addBooking(){
 }
 async function viewBookings() {
     console.log('\n----- View Bookings -----');
-    console.log('(View logic coming next)');
+    //Check if the array is empty to avoid errors
+    if (bookings.length === 0) {
+        console.log('No bookings currently in the system.');
+        return;
+    }
+    //Loop through each booking and print it neatly
+    bookings.forEach(b => {
+        //Find the hut name so we dont just the ID number
+        const hut = huts.find(h => h.id === b.hutId);
+        const hutName = hut ? hut.name : "Unknown Hut";
+        console.log(`- [${hutName}] | Tramper: ${b.name} | Date: ${b.arrivalDate} | Nights: ${b.nights} | Party: ${b.partySize}`);
+    });
 }
 async function cancelBooking() {
     console.log('\n----- Cancel Booking -----');

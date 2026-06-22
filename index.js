@@ -202,14 +202,15 @@ async function main() {
     await loadData(); //First load saved data before showing menu
     let running = true; //Boolean keeps our while loop spinning
     while (running) {
+        console.clear();
         //Print the menu to the screen
-        console.log('\n----- DOC Hut Booking Manager -----');
+        console.log('\n${CYAN}----- DOC Hut Booking Manager -----${RESET}');
         console.log('1. Add a Booking');
         console.log('2. View Bookings');
         console.log('3. Cancel a Booking');
         console.log('4. Exit');
         //Pause and wait for the user to make a choice
-        const choice = await askQuestion('Select an option (1-4): ');
+        const choice = await askQuestion('\nSelect an option (1-4): ');
         //Selection logic
         if (choice === '1') {
             await addBooking();
@@ -219,12 +220,15 @@ async function main() {
             await cancelBooking();
         } else if (choice === '4') {
             //Exit sequence
-            console.log('Saving and exiting. Goodbye!');
+            console.log(`\n${YELLOW}Saving data and exiting. Goodbye!${RESET}`);
             await saveData();
             running = false; //Breaks the while loop
+            break;
         } else {
             //Validation
-            console.log('Invalid choice. Please enter 1, 2, 3, or 4.');
+            console.log(`${RED}Invalid choice. Please enter 1, 2, 3, or 4.${RESET}`);
+            await pause();
+            break;
         }
     }
     //Close the readline interface so its not hanging around

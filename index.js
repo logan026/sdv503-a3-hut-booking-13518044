@@ -147,20 +147,22 @@ async function addBooking(){
     }
     await pause();
 }
+//View bookings menu
 async function viewBookings() {
-    console.log('\n----- View Bookings -----');
+    console.log(`\n${CYAN}----- Recorded Bookings -----${RESET}`);
     //Check if the array is empty to avoid errors
     if (bookings.length === 0) {
         console.log('No bookings currently in the system.');
-        return;
+    } else {
+        //Loop through each booking and print it neatly
+        bookings.forEach(b => {
+            //Find the hut name so we dont just the ID number
+            const hut = huts.find(h => h.id === b.hutId);
+            const hutName = hut ? hut.name : "Unknown Hut";
+            console.log(`- [${GREEN}${hutName}${RESET}] | Tramper: ${b.name} | Date: ${b.arrivalDate} | Nights: ${b.nights} | Party: ${b.partySize}`);
+         });
     }
-    //Loop through each booking and print it neatly
-    bookings.forEach(b => {
-        //Find the hut name so we dont just the ID number
-        const hut = huts.find(h => h.id === b.hutId);
-        const hutName = hut ? hut.name : "Unknown Hut";
-        console.log(`- [${hutName}] | Tramper: ${b.name} | Date: ${b.arrivalDate} | Nights: ${b.nights} | Party: ${b.partySize}`);
-    });
+    await pause();
 }
 async function cancelBooking() {
     console.log('\n----- Cancel Booking -----');

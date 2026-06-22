@@ -1,22 +1,15 @@
 //Imports: Bring in the tools we need from Node.js
-import fs from 'fs/promises';   //'fs' is File System. Using /promises lets us use async/await so the app doesnt freeze while reading files
 import readline from 'readline'; //This lets us read what the user types into the terminal
-const DATA_FILE = './bookings.json'; //Where we will save our data permanently
+import {huts, getBookings, setBookings, loadData, saveData} from './storage.js';
+import {isCapacityAvailable, getRemainingCapacity} from './engine.js';
 //Styling (ANSI Colour Codes)
 const GREEN = '\x1b[32m';
 const RED = '\x1b[31m';
 const CYAN = '\x1b[36m';
 const YELLOW = '\x1b[33m';
 const RESET = '\x1b[0m';
-//Maintain a set of huts
-const huts = [
-    {id: '1', name: 'Perry Saddle Hut', capacity: 40 },
-    {id: '2', name: 'Saxon Hut', capacity: 40 },
-    {id: '3', name: 'James Mackay Hut', capacity: 40},
-    {id: '4', name: 'Heaphy Hut', capacity: 40}
-];
-//This array will hold our live bookings while the app is running
-let bookings = [];
+
+
 //Setup command line input
 const rl = readline.createInterface({
     input: process.stdin, //What the user types
@@ -27,59 +20,6 @@ const askQuestion = (query) => new Promise(resolve => rl.question(query, resolve
 //Helper function to pause the program
 async function pause() {
     await askQuestion(`\n${YELLOW}Press Enter to return to the Main Menu...${RESET}`);
-}
-//Load data (handles missing/corrupt files without crashing)
-async function loadData() {
-    try {
-        //Try to read the file 'utf-8' turns the computer bytes into readable text
-        const data = await fs.readFile(DATA_FILE, 'utf-8');
-        bookings = JSON.parse(data); //Converts the JSON text back into a usable JavaScript array
-        console.log(`${GREEN}Data loaded successfully.${RESET}`);
-    } catch (error) {
-        //If the file doesnt exist yet, or the JSON is broken, we catch the error here so the app dosent crash
-        console.log(`${YELLOW}No existing data found or file corrupt. Starting fresh.${RESET}`);
-        bookings = []; //Start clean with empty arrayy
-    }
-}
-//Save data to JSON
-async function saveData(){
-    //JSON.stringify converts our array into text. the 'null, 2' formats it nicely with indents so its readable
-    await fs.writeFile(DATA_FILE, JSON.stringify(bookings, null, 2));
-}
-//Capacity Logic
-function isCapacityAvailable(hutId, arrivalDate, nights, partySize) {
-    //Calculate all dates for the requested stay
-    const requestedDates = [];
-    const start = new Date(arrivalDate);
-    //Calculate all dates for the requested stay
-    for (let i = 0; i < nights; i++) {
-        const d = new Date(start);
-            d.setDate(start.getDate() + i);
-            requestedDates.push(d.toISOString().split('T')[0]); //Format YYYY-MM-DD
-    }
-    //Check each night against existing bookings
-    for (const date of requestedDates) {
-        let currentOccupancy = 0;
-        //Sum up all parties currently booked for this specific hut on this date
-        for (const b of bookings) {
-            if (b.hutId === hutId) {
-                //Check if existing booking overlaps with this specific date
-                const bStart = new Date(b.arrivalDate);
-                const bEnd = new Date(b.arrivalDate);
-                bEnd.setDate(bStart.getDate() + parseInt(b.nights) - 1);
-                const checkDate = new Date(date);
-                if (checkDate >= bStart && checkDate <= bEnd) {
-                    currentOccupancy += parseInt(b.partySize);
-                }
-            }
-        }
-        //Find the hut capacity and check if this night goes over the limit
-        const hut = huts.find(h => h.id === hutId);
-        if (currentOccupancy + parseInt(partySize) > hut.capacity) {
-            return false; //Found a night where hut is full
-        }
-    }
-    return true; //All nights are safe
 }
 //Core app functions
 async function addBooking(){
@@ -111,13 +51,13 @@ async function addBooking(){
         }
         //Check if its a real date and not in the past
         const inputDate = new Date(date);
-        const today = new Date();
-        today.setHours(0,0,0,0); //Reset time to midnight for accurate comparison
+        const todayStr = new Date().toISOString().split('T')[0];
+        const todayUTC = new Date(todayStr);
         if (isNaN(inputDate.getTime())){
             console.log(`${RED}Error: That calendar date does not exist.${RESET}`);
             continue;
         }
-        if (inputDate < today) {
+        if (inputDate < todayUTC) {
             console.log(`${RED}Error: You cannot book a date in the past.${RESET}`);
             continue;
         }
@@ -159,7 +99,9 @@ async function addBooking(){
                 nights,
                 partySize
             };
-            bookings.push(newBooking);
+            const currentBookings = getBookings();
+            currentBookings.push(newBooking);
+            setBookings(currentBookings);
             await saveData();
             console.log(`${GREEN}Booking successfully added!${RESET}`);
         } else {
@@ -174,23 +116,54 @@ async function addBooking(){
 async function viewBookings() {
     console.clear();
     console.log(`\n${CYAN}----- Recorded Bookings -----${RESET}`);
-    //Check if the array is empty to avoid errors
-    if (bookings.length === 0) {
-        console.log('No bookings currently in the system.');
-    } else {
-        //Loop through each booking and print it neatly
-        bookings.forEach(b => {
-            //Find the hut name so we dont just the ID number
-            const hut = huts.find(h => h.id === b.hutId);
-            const hutName = hut ? hut.name : "Unknown Hut";
-            console.log(`- [${GREEN}${hutName}${RESET}] | Tramper: ${b.name} | Date: ${b.arrivalDate} | Nights: ${b.nights} | Party: ${b.partySize}`);
-         });
+    huts.forEach(h => console.log(`${h.id}. ${h.name}`));
+    let hutId;
+    while(true){
+        hutId = await askQuestion('\nSelect Hut ID (1-4): ');
+        if (huts.find(h => h.id === hutId)) break;
+        console.log(`${RED}Error: Invalid Hut ID.${RESET}`);
     }
+    let date;
+    while(true){
+        date = await askQuestion('Enter Date to inspect (YYYY-MM-DD): ');
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(date)){
+            console.log(`${RED}Error: Date must be in YYYY-MM-DD format.${RESET}`);
+            continue;
+        }
+        if (isNaN(new Date(date).getTime())){
+            console.log(`${RED}Error: Invalid date.${RESET}`);
+            continue;
+        }
+        break;
+    }
+    console.clear();
+    const hut = huts.find(h => h.id === hutId);
+    console.log(`\n${CYAN}----- Bookings for ${hut.name} on ${date} -----${RESET}`);
+    const checkDate = new Date(date);
+    let found = false;
+    getBookings().forEach(b => {
+        if (b.hutId === hutId) {
+            const bStart = new Date(b.arrivalDate);
+            const bEnd = new Date(b.arrivalDate);
+            bEnd.setDate(bStart.getDate() + parseInt(b.nights) - 1);
+            if (checkDate >= bStart && checkDate <= bEnd) {
+                console.log(`- Tramper: ${b.name} | Stay Duration: ${b.nights} nights | Party Size: ${b.partySize}`);
+                found = true;
+            }
+        }
+    });
+    if (!found) {
+        console.log('No active bookings occupy this hut on this date.');
+    }
+    const remCapacity = getRemainingCapacity(hutId, date);
+    console.log(`\n${YELLOW}Remaining Bunk Capacity for this night: ${remCapacity} / ${hut.capacity}${RESET}`);
     await pause();
 }
 //Cancel Booking Menu
 async function cancelBooking() {
     console.clear();
+    let bookings = getBookings();
     console.log(`\n${CYAN}----- Cancel Booking -----${RESET}`);
     if (bookings.length === 0) {
         console.log('No bookings to cancel.');
@@ -211,6 +184,7 @@ async function cancelBooking() {
         const confirm = await askQuestion(`${RED}Are you sure you want to delete this booking? (y/n): ${RESET}`);
         if (confirm.toLowerCase().trim() === 'y'){
             const removed = bookings.splice(index, 1); //Removes 1 item at the index
+            setBookings(bookings);
             await saveData();
             console.log(`${GREEN}Booking for ${removed[0].name} has been cancelled.${RESET}`);
         } else {
@@ -219,6 +193,19 @@ async function cancelBooking() {
     } else if (choice !== '0') {
         console.log(`${RED}Invalid selection.${RESET}`);
     }
+    await pause();
+}
+async function showOccupancySummary(){
+    console.clear();
+    console.log(`\n${CYAN}----- DOC Occupancy Summary -----${RESET}`);
+    const bookings = getBookings();
+    huts.forEach(hut => {
+        const hutBookings = bookings.filter(b => b.hutId === hut.id);
+        const totalTrampers = hutBookings.reduce((sum, b) => sum + b.partySize, 0);
+        console.log(`\n${GREEN}${hut.name}${RESET}:`);
+        console.log(` - Total Saved Bookings: ${hutBookings.length}`);
+        console.log(` - Total Trampers Processed: ${totalTrampers}`);
+    });
     await pause();
 }
 //Main Menu Loop
@@ -232,9 +219,10 @@ async function main() {
         console.log('1. Add a Booking');
         console.log('2. View Bookings');
         console.log('3. Cancel a Booking');
-        console.log('4. Exit');
+        console.log('4. View Occupancy Summary');
+        console.log('5. Exit');
         //Pause and wait for the user to make a choice
-        const choice = await askQuestion('\nSelect an option (1-4): ');
+        const choice = await askQuestion('\nSelect an option (1-5): ');
         //Selection logic
         if (choice === '1') {
             await addBooking();
@@ -243,6 +231,8 @@ async function main() {
         } else if (choice === '3') {
             await cancelBooking();
         } else if (choice === '4') {
+            await showOccupancySummary();
+        } else if (choice === '5') {
             //Exit sequence
             console.log(`\n${YELLOW}Saving data and exiting. Goodbye!${RESET}`);
             await saveData();
@@ -250,7 +240,7 @@ async function main() {
             break;
         } else {
             //Validation
-            console.log(`${RED}Invalid choice. Please enter 1, 2, 3, or 4.${RESET}`);
+            console.log(`${RED}Invalid choice. Please enter 1, 2, 3, 4, or 5.${RESET}`);
             await pause();
         }
     }

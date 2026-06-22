@@ -116,7 +116,29 @@ async function viewBookings() {
 }
 async function cancelBooking() {
     console.log('\n----- Cancel Booking -----');
-    console.log('(Cancel logic coming next');
+    if (bookings.length === 0) {
+        console.log('No bookings to cancel.');
+        return;
+    }
+    console.log('Select a booking to cancel: ');
+    bookings.forEach((b, index) => {
+        const hut = huts.find(h => h.id === b.hutId);
+        const hutName = hut ? hut.name : "Unknown Hut";
+        console.log(`${index + 1}. [${hutName}] | Tramper: ${b.name} | Date: ${b.arrivalDate}`);
+    });
+    //Ask the user which one they want to remove
+    const choice = await askQuestion('Enter number to cancel (or 0 to go back): ');
+    const index = parseInt(choice) - 1;
+    //Validation
+    if (index >= 0 && index < bookings.length) {
+        const removed = bookings.splice(index, 1); //Removes 1 item at the index
+        await saveData();
+        console.log(`Booking for ${removed[0].name} has been cancelled.`);
+    } else if (choice === '0') {
+        return;
+    } else {
+        console.log('Invalid selection.');
+    }
 }
 //Main Menu Loop
 async function main() {

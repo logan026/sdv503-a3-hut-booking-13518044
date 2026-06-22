@@ -1,17 +1,10 @@
 [
   {
-    "id": "1782123667784",
-    "hutId": "1",
-    "name": "Logan",
-    "nights": 5,
-    "partySize": 35
-  },
-  {
-    "id": "1782132446055",
+    "id": "1782134183440",
     "hutId": "1",
     "name": "Logan",
     "arrivalDate": "2026-07-23",
-    "nights": 4,
-    "partySize": 10
+    "nights": 5,
+    "partySize": 20
   }
 ]

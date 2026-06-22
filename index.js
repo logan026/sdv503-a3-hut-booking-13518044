@@ -100,7 +100,29 @@ async function addBooking(){
         if (name.trim()) break; // Break loop if not empty
         console.log(`${RED}Error: Name cannot be empty.${RESET}`);
     }
-    const date = await askQuestion('Enter Arrival Date (YYYY-MM-DD): ');
+    let date;
+    while(true) {
+        date = await askQuestion('Enter Arrival Date (YYYY-MM-DD): ');
+        //Check format using Regex
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(date)) {
+            console.log(`${RED}Error: Date must be exactly in YYYY-MM-DD format.${RESET}`);
+            continue;
+        }
+        //Check if its a real date and not in the past
+        const inputDate = new Date(date);
+        const today = new Date();
+        today.setHours(0,0,0,0); //Reset time to midnight for accurate comparison
+        if (isNaN(inputDate.getTime())){
+            console.log(`${RED}Error: That calendar date does not exist.${RESET}`);
+            continue;
+        }
+        if (inputDate < today) {
+            console.log(`${RED}Error: You cannot book a date in the past.${RESET}`);
+            continue;
+        }
+        break; //If it passes all check break the loop
+    }
     let nights;
     while(true) {
         const nightsInput = await askQuestion('Enter Duration (Nights): ');
@@ -230,7 +252,6 @@ async function main() {
             //Validation
             console.log(`${RED}Invalid choice. Please enter 1, 2, 3, or 4.${RESET}`);
             await pause();
-            break;
         }
     }
     //Close the readline interface so its not hanging around

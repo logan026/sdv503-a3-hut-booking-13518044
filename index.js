@@ -83,18 +83,39 @@ function isCapacityAvailable(hutId, arrivalDate, nights, partySize) {
 }
 //Core app functions
 async function addBooking(){
+    console.clear(); //Clears console to give a clean CLI experience
     console.log(`\n${CYAN}----- Add Booking -----${RESET}`);
     // Show available huts
     huts.forEach(h => console.log(`${h.id}. ${h.name} (Capacity: ${h.capacity})`));
-    const hutId = await askQuestion('Enter Hut ID (1-4): ');
-    const name = await askQuestion('Enter Tramper Name: ');
+    //Input loops (ensures valid input before moving on
+    let hutId;
+    while(true) {
+        hutId = await askQuestion('\nSelect Hut ID (1-4): ');
+        if (huts.find(h => h.id === hutId)) break; //Break loop if valid ID
+        console.log(`${RED}Error: Invalid Hut ID. Try again.${RESET}`);
+    }
+    let name;
+    while(true) {
+        name = await askQuestion('Enter Tramper Name: ');
+        if (name.trim()) break; // Break loop if not empty
+        console.log(`${RED}Error: Name cannot be empty.${RESET}`);
+    }
     const date = await askQuestion('Enter Arrival Date (YYYY-MM-DD): ');
-    const nights = await askQuestion('Enter Number of Nights: ');
-    const partySize = await askQuestion('Enter Party Size: ');
-    //Basic Validation
-    if (parseInt(partySize) <= 0) {
-        console.log('Error: Party size must be at least 1.');
-        return;
+    let nights;
+    while(true) {
+        const nightsInput = await askQuestion('Enter Duration (Nights): ');
+        nights = Number(nightsInput);
+        if (isNaN(nights) || !Number.isInteger(nights)|| nights <= 0) {
+            console.log(`${RED}Error: Please enter a whole number greater than zero.${RESET}`);
+        } else break;
+    }
+    let partySize;
+    while(true) {
+        const partyInput = await askQuestion('Enter Party Size: ');
+        partySize = Number(partyInput);
+        if (isNaN(partySize) || !Number.isInteger(partySize) || partySize <= 0) {
+            console.log(`${RED}Error: Please enter a whole number greater than zero.${RESET}`);
+        } else break;
     }
     //Check Capacity
     if (isCapacityAvailable(hutId, date, nights, partySize)) {

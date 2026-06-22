@@ -73,7 +73,7 @@ function isCapacityAvailable(hutId, arrivalDate, nights, partySize) {
                 }
             }
         }
-        //Find the hut capacity
+        //Find the hut capacity and check if this night goes over the limit
         const hut = huts.find(h => h.id === hutId);
         if (currentOccupancy + parseInt(partySize) > hut.capacity) {
             return false; //Found a night where hut is full
@@ -81,9 +81,11 @@ function isCapacityAvailable(hutId, arrivalDate, nights, partySize) {
     }
     return true; //All nights are safe
 }
-//Core APP functions (Placeholder functions for now)
+//Core app functions
 async function addBooking(){
-    console.log('\n----- Add Booking -----');
+    console.log(`\n${CYAN}----- Add Booking -----${RESET}`);
+    // Show available huts
+    huts.forEach(h => console.log(`${h.id}. ${h.name} (Capacity: ${h.capacity})`));
     const hutId = await askQuestion('Enter Hut ID (1-4): ');
     const name = await askQuestion('Enter Tramper Name: ');
     const date = await askQuestion('Enter Arrival Date (YYYY-MM-DD): ');
